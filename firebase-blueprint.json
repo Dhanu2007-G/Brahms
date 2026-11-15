@@ -1,0 +1,135 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "Authenticated user profile with role and assigned crew code.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "maxLength": 128 },
+        "email": { "type": "string", "maxLength": 256 },
+        "displayName": { "type": "string", "maxLength": 120 },
+        "role": { "type": "string", "enum": ["astronaut", "specialist", "admin"] },
+        "crewCode": { "type": "string", "maxLength": 32 },
+        "environmentMode": { "type": "string", "enum": ["transit", "station", "rover", "lunar", "mars"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "email", "role", "crewCode", "createdAt"]
+    },
+    "DailyCheckin": {
+      "title": "DailyCheckin",
+      "description": "Append-only daily Pulse Ritual check-in metadata.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "ownerUid": { "type": "string", "maxLength": 128 },
+        "crewCode": { "type": "string", "maxLength": 32 },
+        "clientId": { "type": "string", "maxLength": 128 },
+        "observedOn": { "type": "string", "maxLength": 32 },
+        "missionDay": { "type": "number" },
+        "dataSource": { "type": "string", "enum": ["manual", "simulated", "imported_file", "imported_nasa", "device"] },
+        "symptoms": { "type": "array" },
+        "note": { "type": "string", "maxLength": 1000 },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "ownerUid", "crewCode", "clientId", "observedOn", "missionDay", "dataSource", "createdAt"]
+    },
+    "Observation": {
+      "title": "Observation",
+      "description": "Immutable health observation record with provenance and status.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "ownerUid": { "type": "string", "maxLength": 128 },
+        "crewCode": { "type": "string", "maxLength": 32 },
+        "clientId": { "type": "string", "maxLength": 128 },
+        "metricCode": { "type": "string", "maxLength": 64 },
+        "value": { "type": "number" },
+        "unit": { "type": "string", "maxLength": 32 },
+        "status": { "type": "string", "enum": ["valid", "missing", "rejected"] },
+        "dataSource": { "type": "string", "enum": ["manual", "simulated", "imported_file", "imported_nasa", "device"] },
+        "sourceRef": { "type": "string", "maxLength": 256 },
+        "tag": { "type": "string", "maxLength": 64 },
+        "amendsId": { "type": "string", "maxLength": 128 },
+        "observedAt": { "type": "string", "format": "date-time" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "ownerUid", "crewCode", "clientId", "metricCode", "unit", "status", "dataSource", "observedAt", "createdAt"]
+    },
+    "JournalEntry": {
+      "title": "JournalEntry",
+      "description": "Private-by-default behavioural wellness journal entry.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "ownerUid": { "type": "string", "maxLength": 128 },
+        "crewCode": { "type": "string", "maxLength": 32 },
+        "clientId": { "type": "string", "maxLength": 128 },
+        "entryDate": { "type": "string", "maxLength": 32 },
+        "body": { "type": "string", "maxLength": 4000 },
+        "visibility": { "type": "string", "enum": ["private", "shared"] },
+        "shareExpiresAt": { "type": "string", "maxLength": 64 },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "ownerUid", "crewCode", "clientId", "entryDate", "body", "visibility", "createdAt"]
+    },
+    "AccessGrant": {
+      "title": "AccessGrant",
+      "description": "Consent-scoped specialist access grant created by an astronaut.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "ownerUid": { "type": "string", "maxLength": 128 },
+        "crewCode": { "type": "string", "maxLength": 32 },
+        "granteeEmail": { "type": "string", "maxLength": 256 },
+        "scope": { "type": "array" },
+        "validUntil": { "type": "string", "maxLength": 64 },
+        "revoked": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "ownerUid", "crewCode", "granteeEmail", "scope", "validUntil", "revoked", "createdAt"]
+    },
+    "GroundMessage": {
+      "title": "GroundMessage",
+      "description": "Store-and-forward asynchronous Ground Link message.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "ownerUid": { "type": "string", "maxLength": 128 },
+        "crewCode": { "type": "string", "maxLength": 32 },
+        "template": { "type": "string", "maxLength": 64 },
+        "subject": { "type": "string", "maxLength": 200 },
+        "body": { "type": "string", "maxLength": 4000 },
+        "state": { "type": "string", "enum": ["draft", "queued", "transmitting", "in_flight", "delivered", "replied"] },
+        "delaySeconds": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "ownerUid", "crewCode", "template", "subject", "body", "state", "delaySeconds", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserProfile" },
+      "description": "Private user profile and role binding."
+    },
+    "/checkins/{checkinId}": {
+      "schema": { "$ref": "#/entities/DailyCheckin" },
+      "description": "Append-only daily check-in records owned by astronauts."
+    },
+    "/observations/{observationId}": {
+      "schema": { "$ref": "#/entities/Observation" },
+      "description": "Append-only health observations with provenance."
+    },
+    "/journals/{journalId}": {
+      "schema": { "$ref": "#/entities/JournalEntry" },
+      "description": "Private-by-default journal entries."
+    },
+    "/grants/{grantId}": {
+      "schema": { "$ref": "#/entities/AccessGrant" },
+      "description": "Explicit access grants from astronauts to specialists."
+    },
+    "/messages/{messageId}": {
+      "schema": { "$ref": "#/entities/GroundMessage" },
+      "description": "Asynchronous Ground Link messages."
+    }
+  }
+}

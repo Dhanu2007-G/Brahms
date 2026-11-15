@@ -1,0 +1,6 @@
+{
+  "name": "AstraPulse — Astronaut Health Intelligence & Mission Decision Support",
+  "description": "Offline-capable astronaut health intelligence, personal baseline analytics, living Body Twin, and mission decision support by Team Zenitsu for NASA Space Apps Challenge 2026.",
+  "requestFramePermissions": ["camera", "microphone"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

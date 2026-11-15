@@ -1,0 +1,375 @@
+ASTRAPULSE — OPTIMIZED MASTER PROMPT
+
+Full-stack production prototype · NASA Space Apps Challenge 2026 · Team Zenitsu
+
+Usage: Upload all spec documents, open the repository, switch the agent to full coding/agent mode with terminal access, paste this prompt. Designed for Claude Code, Cursor Agent, Windsurf, Replit Agent or equivalent. Not a plan-only request.
+
+⚡ START HERE — FIRST ACTION
+
+Do not greet, plan, or ask questions. Execute this sequence immediately:
+
+ls -la the repository. List all uploaded documents.
+Read every uploaded specification fully (§1 for the list and hierarchy).
+Create docs/IMPLEMENTATION_STATUS.md — truthful checklist of what works today.
+Create docs/DECISIONS.md — log the five known conflicts and their resolutions (§2).
+Begin the first incomplete phase from §13.
+
+First working vertical slice to reach:
+
+Login → load astronaut profile → complete Pulse Ritual check-in → validate + store observations in PostgreSQL → run deterministic analytics engine → refresh Crew Core → display provenance, baseline state and any evidence-backed alert.
+
+Do not stop after a plan, mockup, landing page or static dashboard. Build real code. Run real tests. Fix failures before moving to the next phase.
+
+0. IDENTITY
+Field	Value
+Product	AstraPulse
+Full title	Astronaut Health Intelligence & Mission Decision Support
+Tagline	"Know the crew. Understand the signals. Protect the mission."
+Team	ZENITSU ← overrides "Interstellar" everywhere in older docs
+Event	NASA Space Apps Challenge 2026
+Target	Responsive web app / installable PWA
+Operating model	Software-only. Manual entry, NASA data, clearly labelled synthetic data. No custom hardware.
+Quality bar	Production-quality hackathon prototype. Not a medical device. Not clinically validated.
+
+One-sentence definition: AstraPulse helps astronauts notice and understand changes relative to their own personal history, explains why a pattern was flagged, offers clearly labelled protocol-based next steps, preserves data provenance and privacy, and continues to work when communication with Earth is delayed or unavailable.
+
+1. SOURCE DOCUMENTS — READ COMPLETELY
+
+Inspect every document in full. Do not rely on filenames or memory.
+
+#	Document	Authority
+1	CLAUDE.md	AI coding rules and prime directives
+2	PRD.md	Requirements, user stories, scope, success metrics
+3	TECH_STACK.md	Architecture, dependencies, layout, security, offline design
+4	ROADMAP.md	Phased plan, milestones, acceptance gates
+5	ANALYTICS_SPEC.md	Baseline, deviation, trends, persistence, explainability, test invariants
+6	DATA_DICTIONARY.md	Canonical schema, enumerations, constraints, provenance rules
+7	API_SPEC.md	REST paths, auth, request/response contracts, sync contract
+8	TEST_PLAN.md	Unit, API, integration, safety, E2E, security, accessibility, release gates
+9	SAFETY_AND_LIMITATIONS.md	Safety language, privacy, limitations (reconcile with §2-C)
+10	SUBMISSION.md	Pitch, demo script, claims audit, submission checklist
+11	AstraPulse Mission Deck — UI/UX Design Guide.pdf	39 pp. UI/UX v2.0 — replaces old card-grid with Crew Core
+12	AstraPulse Part 2.pdf	40 pp. Component specs, calculations, alert params, offline, handoff
+13	AstraPulse_Complete_Combined.pdf	79 pp. Convenience copy of 11 + 12
+14	NASA challenge brief	Authoritative problem statement
+
+Hierarchy when documents conflict: NASA brief > user's latest instruction (Team Zenitsu) > UI/UX Guide v2 + Part 2 > remaining Markdown specs > existing code.
+
+2. KNOWN CONFLICTS — RESOLVE BEFORE CODING
+
+Log each resolution in docs/DECISIONS.md. Do not leave these implicit.
+
+A. Team name
+
+All older docs say "Interstellar". Use Zenitsu in all UI, docs, seed data, README, submission text and branding.
+
+B. Home screen: card grid → Crew Core
+
+UI/UX Guide v2 explicitly replaces the generic metric-card grid dashboard with the Crew Core: a living Body Twin + Hazard Ring + Vitality Rings + Time Conductor. Implement the Crew Core as /. Metric cards remain valid inside System Drawers and Insights. Do not regress the home screen to a card grid.
+
+C. Safety language: blanket ban → three guidance tiers
+
+Older SAFETY_AND_LIMITATIONS.md, PRD.md and CLAUDE.md say "no treatment advice". The UI/UX Guide v2 §0.2 deliberately revises that. Apply exactly these tiers and update CLAUDE.md, PRD.md, SAFETY_AND_LIMITATIONS.md and all denial lists to match:
+
+Tier	What the app may say
+1 — Self-care / countermeasures	Non-drug, evidence-linked actions from a labelled demonstration protocol library
+2 — Crew-medical checklist	Measurement/re-check steps framed as "per your mission protocol"
+3 — Escalation	When/how to contact flight surgeon; supports asynchronous comms with delay shown
+
+Permanently prohibited (no exceptions):
+
+Definitive diagnosis or "you have condition X"
+Medication names, dosages or drug recommendations
+Emergency instructions beyond "follow your approved emergency procedures"
+AI-generated medical advice
+Claiming demonstration protocols are flight-surgeon-approved
+
+All protocol content must carry the label: "Demonstration content — requires replacement/approval by qualified flight medical personnel before real use." Interpretations are "possible contributors", never diagnoses.
+
+D. Analytics ruleset version conflict
+
+ANALYTICS_SPEC.md and AstraPulse Part 2.pdf §6.4–6.5 differ on some alert thresholds. Compare exact definitions, choose one coherent versioned ruleset (the Part 2 YAML is the more recent and complete source), record the resolution in DECISIONS.md, and stamp the chosen version on every alert. Old alerts retain the version that generated them.
+
+E. NASA data availability
+
+Some datasets mentioned in documents may be controlled or unavailable. Verify accession, variables, units, access level and license before integrating. Mark any unavailable dataset as "access required / not integrated" and use separately labelled synthetic data. Never fabricate NASA records.
+
+3. NON-NEGOTIABLE PRODUCT PRINCIPLES
+
+These 10 rules govern every feature. Test for them explicitly.
+
+Personal baseline over population averages. Compare each astronaut against their own history.
+Every alert is evidence-backed. Show rule ID, ruleset version, baseline vs latest, deviation, persistence, source observation IDs and plain-language explanation.
+Every value has provenance. Source (manual | simulated | imported_file | imported_nasa | device), observed timestamp, freshness status — always visible.
+Missing ≠ zero ≠ normal. null is null. Gaps are gaps. Never impute, interpolate or default a missing reading.
+Decision support, not diagnosis. See §2-C.
+Offline-first for check-ins. Data entry must work without connectivity. Sync idempotently on reconnect.
+Privacy by default. Journal entries are invisible to specialists unless explicitly shared.
+Deterministic analytics. Identical inputs → identical output. No LLM or black box inside the core engine.
+Simulated data always labelled. Dashed lines on charts. Flask-icon cyan badge on cards. SIMULATED banner on screens with any synthetic value.
+No hardware dependency. All core workflows complete via manual typed input.
+4. REQUIRED TECHNOLOGY STACK
+
+Follow TECH_STACK.md. Do not silently substitute a mock backend, local-only database or no-code alternative.
+
+Frontend
+
+React 19 · TypeScript strict: true · Vite · Tailwind CSS v4 (design tokens) · shadcn/ui + Radix · React Router · TanStack Query · Zustand (UI state only) · React Hook Form + Zod · Recharts · vite-plugin-pwa / Workbox · Dexie / IndexedDB · Lucide icons · Vitest + Testing Library + Playwright + axe
+
+Backend
+
+Python 3.12 · FastAPI · Pydantic v2 · SQLAlchemy 2.0 · Alembic · PostgreSQL 16 · NumPy + Pandas (analytics) · scikit-learn (Isolation Forest — stretch only) · Argon2id · PyJWT · httpOnly refresh cookie · slowapi · ReportLab + matplotlib · pydantic-settings · structlog
+
+Infrastructure and quality
+
+Docker + Docker Compose · GitHub Actions CI · Ruff + mypy + pytest + Hypothesis · ESLint + Prettier + typecheck · pip-audit + npm audit · Playwright E2E
+
+Architecture boundaries (enforced)
+Backend layers: API routers → services → repositories → SQLAlchemy models. Routers are thin. Only repositories hold database sessions.
+Analytics package is a pure library. No FastAPI, SQLAlchemy, network clients or app imports inside it.
+Pydantic API schemas separate from SQLAlchemy models.
+Frontend: typed services + TanStack Query hooks only. No direct fetch in components.
+Offline logic only in the offline/ module.
+Zod schemas and Pydantic schemas must stay in sync.
+Pin every new dependency. Justify it before adding.
+
+If the environment cannot run this stack, say so explicitly. Build the closest verifiable implementation, list what remains honestly, and do not claim an alternative data model is the specified PostgreSQL/FastAPI architecture.
+
+5. DESIGN SYSTEM — NON-NEGOTIABLE TOKENS
+
+Visual identity: "Bioluminescent glass on deep space" — calm, high-trust aerospace interface. Not a generic admin template.
+
+void:    #04060C   deep:   #0A0F1C   pulse:    #3DE0FF   aurora:  #8B7CFF
+nominal: #2DD4BF   watch:  #FFB547   review:   #FF5C93   stale:   #5B6785
+text-1:  #F2F6FF   text-2: #A9B4CC   signal:   #A3E635   alert:   #FB923C
+
+Fonts: Sora 600 (display/headings) · Manrope 500/600 (interface) · JetBrains Mono 500 (telemetry/numbers)
+
+Rules: Status colour is never the only signal — always pair with shape/icon + text label. Missing days are gaps, never zero or interpolated lines. Every chart has an accessible text summary and table-view toggle. Glass panels: blur(24px) saturate(140%), 1px rgba(255,255,255,0.10) border. WCAG 2.2 AA contrast minimum everywhere. Touch targets 44 px minimum; 56 px in Glove mode.
+
+Full design specs — components, motion, responsive breakpoints, validation, states, handoff — are in the UI/UX PDFs (§1 items 11–13). Implement them. Do not invent a parallel design system.
+
+6. THE 14 SCREENS — KEY DIFFERENTIATORS
+
+Full specs for all 14 screens are in the UI/UX PDFs. What follows are the critical implementation differentiators that cannot be inferred from generic patterns. Implement every screen as a real route — not a stub, placeholder, or inert menu item.
+
+S1 /enter — Mission entry with persona/environment picker and mandatory disclosure: "Demo data is simulated. Decision-support prototype. Not a medical device."
+
+S2 / — Crew Core — The signature screen. NOT a card grid. Must have:
+
+Front/back clickable SVG Body Twin with 10 keyboard-accessible hotspot regions
+Five-node Hazard Ring (radiation, isolation/confinement, distance from Earth, gravity, hostile environment)
+Three Vitality Rings (Recovery, Strain, Mind) with data-confidence encoding — no score when inputs insufficient
+Time Conductor scrubber at the bottom — scrubbing replays the entire interface at the selected mission day
+Heartbeat animation only when fresh HR exists; clamped to ≤ 2.5 pulses/s; disabled in reduced-motion mode
+
+S3 /system/:id — System Drawer (right panel / bottom sheet). Six tabs: Now · Trend · Why it matters · How to measure · Do this (Tier 1/2 guidance) · Escalate. Shows "possible contributors" chips, not diagnoses.
+
+S4 /ritual — Pulse Ritual. Six-step guided check-in. Every field optional — Not today stores null. Sleep dial is interactive 24-hour circular handle. Autosaves draft. Sealing triggers analytics and updates UI.
+
+S5 /measure — Measure Lab. Guides BP, HR, temp, SpO₂, glucose (fasting/pre/post tags), mass, respiratory rate, reaction test, vision check. Camera pulse is "Experimental" with signal-quality gating — never auto-saves.
+
+S6 /insights — Multi-metric historical charts with baseline band, rolling median, alert markers, accessible table view. Time Conductor controls all visible time. Correlation explorer shows "correlation ≠ causation" label.
+
+S7 /alerts — Alert Center with Care Guide. Sorted by level. Each alert shows: what changed · baseline vs latest · deviation · persistence dots · rule ID · ruleset version · evidence observation IDs · three guidance tiers. No modal interruption for info/watch level.
+
+S8 /wellness — Private-by-default journal. Explicit per-entry share with scope/expiry/revocation. Journal text never feeds analytics or any AI service.
+
+S9 /link — Ground Link. Earth-to-spacecraft line; messages travel as animated pulses proportional to real light-time delay. Blackout planner and autonomy mode.
+
+S10 /habitat — Cabin environment context. CO₂ is never relabelled as a personal lung metric. Absorbed dose (Gy) and dose equivalent (Sv) are never conflated.
+
+S11 /quests — Gamification: daily quests, streaks, XP, constellation. Exact XP caps from ruleset YAML. Never rewards fasting, extreme exercise, reduced sleep or unsafe behaviour. Fully opt-out.
+
+S12 /reports — PDF/CSV reports with dataset registry, evidence library (grouped by five hazards), provenance chart, AI-use disclosure. Private journal excluded by default.
+
+S13 /ground — Role-gated specialist console. Read-only Body Twin. Specialist sees only data covered by active, non-revoked grant. Cannot read private journal.
+
+S14 /settings — Units (mmHg/kPa, °C/°F, mg/dL/mmol/L, kg/lb) · accessibility modes (reduced motion, high contrast, colour-blind palette, 100–150% text, Glove mode, Calm mode) · privacy/grants · sync queue · admin tools (demo only).
+
+Required UI states on every data screen: loading skeleton shaped like the content · empty state with one action · error state with retry · stale state with freshness · not-recorded state (distinct from stale) · offline state with pending count · simulated banner.
+
+7. DATABASE AND DATA MODEL
+
+Follow DATA_DICTIONARY.md completely. Key invariants the engine and tests must enforce:
+
+UUIDs · UTC timestamptz · snake_case columns · never plain timestamp.
+Every health observation has: metric_code, nullable value, unit, observed_at, recorded_at, data_source, source_reference, status, client_id.
+data_source enum: manual | simulated | imported_file | imported_nasa | device.
+status enum: valid | missing | rejected. Missing = NULL value + status = missing. Never set value = 0 for a missing reading.
+Observations are append-only. Never UPDATE or DELETE. Corrections are new rows linked via amends_id.
+Rejected observations retain rejection reason and are excluded from analytics.
+Journal body: separate table, private by default, excluded from analytics, audit logs and all third-party services.
+Access grants: scoped, time-limited, revocable, audited. Specialist sees only what an active grant covers.
+Database-level constraints enforce critical invariants — do not rely on frontend validation alone.
+Rulesets are versioned rows. Every alert and every analytics result includes ruleset_id.
+8. HEALTH INTELLIGENCE ENGINE
+
+Implement as a pure deterministic function — no I/O, no database, no clock, no randomness:
+
+python
+evaluate(observations: list[Observation], ruleset: Ruleset, as_of: datetime) -> EvaluationResult
+
+Pipeline (must follow exactly):
+
+Validate and normalise observations
+Remove duplicates per specification
+Select 14-day baseline window (configurable; respect exclusion rules)
+Personal median baseline
+Robust scale: MAD → IQR/1.349 fallback → metric_scale_floor × baseline fallback; scale must always be positive
+Direction-aware modified z-score / adverse deviation (direction per metric: high | low | both)
+Theil–Sen trend slope + rolling median
+Apply all rules from the versioned YAML: single-reading · persistent-trend · combined-pattern · sleep-specific · data-gap
+Deterministic explanation with evidence observation IDs
+Return: baseline state · completeness · alert candidates · ruleset version
+
+Critical behaviours:
+
+insufficient_data and baseline_forming are first-class states; never produce watch/review alerts without sufficient baseline
+Sleep-hours rule: low direction only; 7-day window
+Combined-pattern: 2+ co-occurring metrics each at ≥ Noted + persistence on ≥ 1 of them
+Data-gap: Noted at 2 days, Watch at 3 days; never escalates to Review alone
+Alert deduplication: combined alert supersedes individual metric alerts for the same day
+Radiation and cabin-environment readings are context variables — never personal physiological status
+Rules live in backend/app/services/analytics/ruleset_v1_0_0_demo.yaml — not hardcoded in service functions
+
+Optional LLM explanation layer (stretch only):
+
+Deterministic explanation always generated first and always visible
+LLM may only rephrase structured alert data into plain language — never score, diagnose, create or suppress alerts
+Never send journal text, identifiers, raw time series or private content
+Validate output for diagnosis/prescription language; fall back to deterministic wording on any failure
+Label as "AI-assisted wording of the rule-based result"
+Do not enable in MVP if privacy guarantees cannot be established
+9. AUTHENTICATION, PRIVACY AND SECURITY
+Argon2id password hashing. Never store plaintext credentials.
+Short-lived access token; refresh rotation in httpOnly, Secure, SameSite cookie.
+Login rate limiting / lockout.
+Deny by default on all protected routes. Explicit authorization per route.
+Astronaut accesses only their own records.
+Specialist accesses only records covered by active, unexpired, non-revoked grant.
+No health values, journal text or PII in logs.
+Security headers: CSP, nosniff, Referrer-Policy, Permissions-Policy.
+CORS restricted to configured frontend origin.
+Validate file type, size, MIME and content on import.
+Clear sensitive local cache on sign-out. No tokens or secrets in IndexedDB.
+No third-party analytics, tracking pixels or unnecessary PII collection.
+Audit log: cross-user reads, grants/revocations, exports, alert actions.
+10. OFFLINE-FIRST PWA AND SYNC
+Installable PWA (vite-plugin-pwa / Workbox). App-shell caching.
+Dexie / IndexedDB: local cache, check-in drafts and durable outbox.
+Client-generated UUID per check-in and observation; idempotency keys on every mutation.
+Write to IndexedDB first, then attempt sync.
+Show "Saved locally — pending sync" badge while offline.
+On reconnect: retry in order with exponential backoff (30 s → 2 min → 10 min); max 5 attempts.
+Server returns per-item accepted | duplicate | rejected — one bad item must not fail the entire batch. Rejected items remain visible with reason.
+Crash/reload during sync must not create duplicate records.
+Distinguish browser offline from simulated deep-space communication blackout — these are different states.
+Clear sensitive local cache on sign-out.
+11. SEEDED DEMO DATA — EXACT SCENARIOS
+
+Four deterministic ARES-01 personas with a fixed random seed. All values labelled simulated. Simulated banner visible wherever synthetic data appears.
+
+Persona	Scenario	Required outcome
+ASTRA-001	Stable baseline, stable observations	No watch/review alerts on final scenario day
+ASTRA-002	Sleep decreasing, fatigue rising, HR drifting	Combined-pattern alert fires under selected ruleset
+ASTRA-003	Exercise/resistive adherence decreasing	Activity persistence alert fires
+ASTRA-004	Mood decreasing, stress rising	Wellness persistence alert fires
+
+Same seed script produces identical data on every run. Seed/reset routes are disabled in production. No real-person identifiers, diagnoses or treatment doses in seed data.
+
+12. TESTING — PROVE IT WORKS
+
+Read TEST_PLAN.md as the test contract. Do not mark a feature complete based on code generation or visual appearance alone.
+
+Required layers: analytics unit tests (including Hypothesis property tests) · backend service/repository tests · PostgreSQL integration tests · API contract tests (every endpoint) · authorization matrix tests (every protected route) · frontend component and form tests · Playwright E2E covering the demo script · axe accessibility tests on every main page · security/dependency scans · offline/reload/retry/duplicate tests · report content tests.
+
+Critical safety tests (all must pass before any release gate):
+
+No provenance field → reject
+null stays null, never becomes zero
+Plausibility bounds enforced server-side
+Append-only observation protections at database level
+Every alert has rule ID, ruleset version, explanation and evidence
+Identical input → identical analytics output (determinism)
+No diagnosis/prescription wording in any template, protocol or UI string
+Simulated data triggers simulated banner
+Specialist cannot read private journal through any route
+Health values and journal text absent from logs
+LLM fallback works; LLM cannot alter alert levels (if LLM enabled)
+
+E2E scenarios that must pass:
+
+Login → Crew Core loads with real data
+Normal check-in → persists → dashboard reflects new data
+Missing-field check-in → "Not recorded" (not zero)
+ASTRA-001 produces no review-level alert
+ASTRA-002 combined-pattern alert appears with exact supporting observations
+Go offline → submit check-in → reload browser → reconnect → one sync, no loss, no duplicate
+Journal private → specialist blocked → explicit share → specialist sees only permitted entry → revoke → invisible
+PDF/CSV export contains all required sections and disclaimers
+Keyboard-only Pulse Ritual and Body Twin navigation
+390 × 844 mobile layout with no horizontal overflow
+13. BUILD PHASES — EXECUTE IN ORDER
+
+Do not jump to flashy features. Build vertical slices with working acceptance tests before the next phase starts.
+
+Phase	Goal	Exit condition
+0	Foundation	Frontend + backend start; health/readiness endpoints return 200; one-command local startup works
+1	Domain model	Full schema, migrations, metric definitions, seed data, repository layer, provenance/append-only tests pass
+2	Auth + RBAC	Argon2id login, refresh rotation, role enforcement, audit log, full 401/403/ownership test matrix passes
+3	Check-ins + observations	Pydantic validation, idempotent create, list/filter, CSV import; vertical slice: login → check-in → PostgreSQL → Crew Core shows data
+4	Analytics engine	Pure function, versioned ruleset YAML, golden tests, property tests, edge cases, analytics API endpoints
+5	Alerts + care guide	Persistence, deduplication, evidence links, three-tier guidance, review/follow-up workflow
+6	Crew Core + Insights	Body Twin (10 hotspots), Hazard Ring, Vitality Rings, System Drawer, Time Conductor, historical replay
+7	Wellness + privacy	Private journal, explicit sharing, scoped grants, revocation, privacy/authorization tests
+8	Reports + evidence	Evidence library, dataset registry, PDF/CSV export, provenance, disclaimers
+9	Offline + sync	PWA, service worker, Dexie outbox, retries, blackout simulator, duplicate-prevention tests
+10	Polish + deploy	All 14 screens complete, responsive states, accessibility, performance; deploy when credentials available
+11	Submission ready	README, claims audit, demo script, recorded walkthrough, checklist
+12	Stretch	Experimental ML, LLM wording, advanced specialist console — only after M2 MVP release gates are green
+
+MVP cut line (M2): Phases 0–7 complete + CSV report + offline check-in. Never sacrifice a reliable MVP to start Phase 12.
+
+14. AGENT BEHAVIOUR
+During implementation
+Make real code changes in the repository. No plan-only responses.
+One vertical slice at a time. Test after each phase. Fix failures before proceeding.
+No dead buttons, fake charts, hardcoded "success" messages or placeholders that look functional.
+Every button, tab, form, chart filter, export and route either works or is visibly disabled with a reason tracked as incomplete.
+All visible data comes from API/database, local persisted queue, or an explicitly labelled simulator. Never hardcode UI sample values as if real.
+No frontend-only permanent storage. No in-memory-only backend database.
+Loading · empty · error · stale · not-recorded · offline states required everywhere they apply.
+Use migrations for schema changes; never mutate the production schema manually.
+Never replace exact documented algorithms with an LLM or black-box package.
+Never claim tests/build/deployment passed unless you ran them and can show the output.
+If blocked
+Diagnose and try a reasonable fix.
+If external credentials or inaccessible NASA data are required, implement the safe adapter, mark integration as "access required / not integrated" and continue independent work.
+Ask a question only if a decision cannot be safely inferred and would materially change architecture or data handling.
+Before stopping each session
+Run backend tests, frontend lint/typecheck/build, applicable migrations and smoke checks.
+Update IMPLEMENTATION_STATUS.md, README.md and relevant docs.
+Create docs/KNOWN_LIMITATIONS.md for any remaining scope.
+Report completed · partially completed · not started · blocked · verified — separately.
+15. DEFINITION OF DONE
+
+AstraPulse is ready for demonstration only when all 15 conditions are true:
+
+A real user signs in; role and ownership permissions are enforced.
+A manual check-in saves to PostgreSQL and persists across server and browser restarts.
+A missing value remains NULL and displays "Not recorded".
+Every observation has complete provenance and cannot be silently overwritten.
+Analytics are deterministic, tested and traceable to observations and a ruleset version.
+Alerts show rule, baseline, latest, deviation, trend/persistence, evidence and follow-up actions.
+Crew Core Body Twin and all 14 principal routes are functional and keyboard-accessible.
+Journal privacy and scoped specialist access are enforced by backend authorization.
+Reports export correctly and exclude private journal data by default.
+PWA offline check-in survives reload/closure and syncs idempotently — no loss, no duplication.
+NASA references/datasets are truthful, verified, attributed and correctly limited.
+Simulated data is unmistakably labelled everywhere.
+All critical automated tests and release gates pass, or any blocker is explicitly documented.
+README and deployment instructions reproduce the app on a clean machine.
+The project is branded AstraPulse — Team Zenitsu throughout.
+
+Inspect the repository and all uploaded documents first. Then build.

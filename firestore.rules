@@ -1,0 +1,215 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global Safety Net: Default-deny catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Hardened Global Helpers
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerified() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isAdmin() {
+      return isVerified() && (
+        request.auth.token.email == 'dhanwanthjangam@gmail.com' ||
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+
+    // Validation Blueprints
+    function isValidUserProfile(data) {
+      return data.keys().hasAll(['uid', 'email', 'role', 'crewCode', 'createdAt']) &&
+        data.keys().hasOnly(['uid', 'email', 'displayName', 'role', 'crewCode', 'environmentMode', 'createdAt']) &&
+        data.uid is string && data.uid == request.auth.uid && data.uid.size() <= 128 &&
+        data.email is string && data.email.size() <= 256 &&
+        (!('displayName' in data) || (data.displayName is string && data.displayName.size() <= 120)) &&
+        data.role is string && (data.role in ['astronaut', 'specialist'] || (data.role == 'admin' && isAdmin())) &&
+        data.crewCode is string && data.crewCode.size() <= 32 &&
+        (!('environmentMode' in data) || (data.environmentMode is string && data.environmentMode in ['transit', 'station', 'rover', 'lunar', 'mars'])) &&
+        data.createdAt == request.time;
+    }
+
+    function isValidDailyCheckin(data) {
+      return data.keys().hasAll(['id', 'ownerUid', 'crewCode', 'clientId', 'observedOn', 'missionDay', 'dataSource', 'createdAt']) &&
+        data.keys().hasOnly(['id', 'ownerUid', 'crewCode', 'clientId', 'observedOn', 'missionDay', 'dataSource', 'symptoms', 'note', 'createdAt']) &&
+        isValidId(data.id) &&
+        data.ownerUid is string && data.ownerUid == request.auth.uid && data.ownerUid.size() <= 128 &&
+        data.crewCode is string && data.crewCode.size() <= 32 &&
+        isValidId(data.clientId) &&
+        data.observedOn is string && data.observedOn.size() <= 32 &&
+        data.missionDay is number && data.missionDay >= 1 && data.missionDay <= 1000 &&
+        data.dataSource is string && data.dataSource in ['manual', 'simulated', 'imported_file', 'imported_nasa', 'device'] &&
+        (!('symptoms' in data) || (data.symptoms is list && data.symptoms.size() <= 20 && (data.symptoms.size() == 0 || data.symptoms[0] is string))) &&
+        (!('note' in data) || (data.note is string && data.note.size() <= 1000)) &&
+        data.createdAt == request.time;
+    }
+
+    function isValidObservation(data) {
+      return data.keys().hasAll(['id', 'ownerUid', 'crewCode', 'clientId', 'metricCode', 'unit', 'status', 'dataSource', 'observedAt', 'createdAt']) &&
+        data.keys().hasOnly(['id', 'ownerUid', 'crewCode', 'clientId', 'metricCode', 'value', 'unit', 'status', 'dataSource', 'sourceRef', 'tag', 'amendsId', 'observedAt', 'createdAt']) &&
+        isValidId(data.id) &&
+        data.ownerUid is string && data.ownerUid == request.auth.uid && data.ownerUid.size() <= 128 &&
+        data.crewCode is string && data.crewCode.size() <= 32 &&
+        isValidId(data.clientId) &&
+        data.metricCode is string && data.metricCode.size() <= 64 &&
+        (!('value' in data) || data.value == null || data.value is number) &&
+        data.unit is string && data.unit.size() <= 32 &&
+        data.status is string && data.status in ['valid', 'missing', 'rejected'] &&
+        data.dataSource is string && data.dataSource in ['manual', 'simulated', 'imported_file', 'imported_nasa', 'device'] &&
+        (!('sourceRef' in data) || (data.sourceRef is string && data.sourceRef.size() <= 256)) &&
+        (!('tag' in data) || (data.tag is string && data.tag.size() <= 64)) &&
+        (!('amendsId' in data) || isValidId(data.amendsId)) &&
+        data.observedAt is string && data.observedAt.size() <= 64 &&
+        data.createdAt == request.time;
+    }
+
+    function isValidJournalEntry(data) {
+      return data.keys().hasAll(['id', 'ownerUid', 'crewCode', 'clientId', 'entryDate', 'body', 'visibility', 'createdAt']) &&
+        data.keys().hasOnly(['id', 'ownerUid', 'crewCode', 'clientId', 'entryDate', 'body', 'visibility', 'shareExpiresAt', 'createdAt']) &&
+        isValidId(data.id) &&
+        data.ownerUid is string && data.ownerUid == request.auth.uid && data.ownerUid.size() <= 128 &&
+        data.crewCode is string && data.crewCode.size() <= 32 &&
+        isValidId(data.clientId) &&
+        data.entryDate is string && data.entryDate.size() <= 32 &&
+        data.body is string && data.body.size() >= 1 && data.body.size() <= 4000 &&
+        data.visibility is string && data.visibility in ['private', 'shared'] &&
+        (!('shareExpiresAt' in data) || (data.shareExpiresAt is string && data.shareExpiresAt.size() <= 64)) &&
+        data.createdAt == request.time;
+    }
+
+    function isValidAccessGrant(data) {
+      return data.keys().hasAll(['id', 'ownerUid', 'crewCode', 'granteeEmail', 'scope', 'validUntil', 'revoked', 'createdAt']) &&
+        data.keys().hasOnly(['id', 'ownerUid', 'crewCode', 'granteeEmail', 'scope', 'validUntil', 'revoked', 'createdAt']) &&
+        isValidId(data.id) &&
+        data.ownerUid is string && data.ownerUid == request.auth.uid && data.ownerUid.size() <= 128 &&
+        data.crewCode is string && data.crewCode.size() <= 32 &&
+        data.granteeEmail is string && data.granteeEmail.size() <= 256 &&
+        data.scope is list && data.scope.size() >= 1 && data.scope.size() <= 10 && data.scope[0] is string &&
+        data.validUntil is string && data.validUntil.size() <= 64 &&
+        data.revoked is bool &&
+        data.createdAt == request.time;
+    }
+
+    function isValidGroundMessage(data) {
+      return data.keys().hasAll(['id', 'ownerUid', 'crewCode', 'template', 'subject', 'body', 'state', 'delaySeconds', 'createdAt']) &&
+        data.keys().hasOnly(['id', 'ownerUid', 'crewCode', 'template', 'subject', 'body', 'state', 'delaySeconds', 'createdAt']) &&
+        isValidId(data.id) &&
+        data.ownerUid is string && data.ownerUid == request.auth.uid && data.ownerUid.size() <= 128 &&
+        data.crewCode is string && data.crewCode.size() <= 32 &&
+        data.template is string && data.template.size() <= 64 &&
+        data.subject is string && data.subject.size() <= 200 &&
+        data.body is string && data.body.size() <= 4000 &&
+        data.state is string && data.state in ['draft', 'queued', 'transmitting', 'in_flight', 'delivered', 'replied'] &&
+        data.delaySeconds is number && data.delaySeconds >= 0 && data.delaySeconds <= 100000 &&
+        data.createdAt == request.time;
+    }
+
+    // Admins lookup collection (read-only)
+    match /admins/{adminId} {
+      allow get: if isSignedIn() && isValidId(adminId) && request.auth.uid == adminId;
+      allow list, create, update, delete: if false;
+    }
+
+    // Users collection
+    match /users/{userId} {
+      allow get: if isSignedIn() && isValidId(userId) && (request.auth.uid == userId || isAdmin());
+      allow list: if isSignedIn() && resource.data.uid == request.auth.uid;
+      allow create: if isVerified() && isValidId(userId) && request.auth.uid == userId && isValidUserProfile(incoming());
+      allow update: if isVerified() && isValidId(userId) && isValidUserProfile(incoming()) && (
+        (request.auth.uid == userId &&
+          incoming().uid == existing().uid &&
+          incoming().role == existing().role &&
+          incoming().createdAt == existing().createdAt &&
+          incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'crewCode', 'environmentMode'])) ||
+        isAdmin()
+      );
+      allow delete: if false;
+    }
+
+    // Daily Check-ins (Append-only)
+    match /checkins/{checkinId} {
+      allow get: if isSignedIn() && isValidId(checkinId) && (existing().ownerUid == request.auth.uid || isAdmin());
+      allow list: if isSignedIn() && resource.data.ownerUid == request.auth.uid;
+      allow create: if isVerified() && isValidId(checkinId) && isValidDailyCheckin(incoming());
+      allow update, delete: if false;
+    }
+
+    // Observations (Strictly Append-only per Prime Directive 9)
+    match /observations/{observationId} {
+      allow get: if isSignedIn() && isValidId(observationId) && (existing().ownerUid == request.auth.uid || isAdmin());
+      allow list: if isSignedIn() && resource.data.ownerUid == request.auth.uid;
+      allow create: if isVerified() && isValidId(observationId) && isValidObservation(incoming());
+      allow update, delete: if false;
+    }
+
+    // Private-by-default Journals
+    match /journals/{journalId} {
+      allow get: if isSignedIn() && isValidId(journalId) && (
+        existing().ownerUid == request.auth.uid ||
+        existing().visibility == 'shared'
+      );
+      allow list: if isSignedIn() && resource.data.ownerUid == request.auth.uid;
+      allow create: if isVerified() && isValidId(journalId) && isValidJournalEntry(incoming());
+      allow update: if isVerified() && isValidId(journalId) && isValidJournalEntry(incoming()) &&
+        existing().ownerUid == request.auth.uid &&
+        incoming().ownerUid == existing().ownerUid &&
+        incoming().id == existing().id &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().diff(existing()).affectedKeys().hasOnly(['body', 'visibility', 'shareExpiresAt']);
+      allow delete: if false;
+    }
+
+    // Consent Access Grants
+    match /grants/{grantId} {
+      allow get: if isSignedIn() && isValidId(grantId) && (
+        existing().ownerUid == request.auth.uid ||
+        existing().granteeEmail == request.auth.token.email ||
+        isAdmin()
+      );
+      allow list: if isSignedIn() && resource.data.ownerUid == request.auth.uid;
+      allow create: if isVerified() && isValidId(grantId) && isValidAccessGrant(incoming());
+      allow update: if isVerified() && isValidId(grantId) && isValidAccessGrant(incoming()) && (
+        (existing().ownerUid == request.auth.uid &&
+          incoming().ownerUid == existing().ownerUid &&
+          incoming().createdAt == existing().createdAt &&
+          incoming().diff(existing()).affectedKeys().hasOnly(['revoked', 'validUntil', 'scope'])) ||
+        isAdmin()
+      );
+      allow delete: if false;
+    }
+
+    // Ground Link Messages
+    match /messages/{messageId} {
+      allow get: if isSignedIn() && isValidId(messageId) && (existing().ownerUid == request.auth.uid || isAdmin());
+      allow list: if isSignedIn() && resource.data.ownerUid == request.auth.uid;
+      allow create: if isVerified() && isValidId(messageId) && isValidGroundMessage(incoming());
+      allow update: if isVerified() && isValidId(messageId) && isValidGroundMessage(incoming()) && (
+        (existing().ownerUid == request.auth.uid &&
+          existing().state in ['draft', 'queued'] &&
+          incoming().ownerUid == existing().ownerUid &&
+          incoming().createdAt == existing().createdAt &&
+          incoming().diff(existing()).affectedKeys().hasOnly(['subject', 'body', 'state'])) ||
+        isAdmin()
+      );
+      allow delete: if isVerified() && isValidId(messageId) && existing().ownerUid == request.auth.uid && existing().state in ['draft', 'queued'];
+    }
+  }
+}
